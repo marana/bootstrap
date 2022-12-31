@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+BIN_NAME=$(basename "$0")
+COMMAND_NAME=$1
+
+PROJECT="dotFiles"
+SOURCE="git@gitlab.com:heymarkarana/$PROJECT.git"
+TARGET="$HOME/.dotFiles"
+INPUTVARIABLE=$1
+
+sub_help () {
+    echo "Usage: $BIN_NAME <command> <arg>"
+    echo
+    echo "Commands:"
+    echo "   install                    Fresh install of .dotFiles"
+    echo "   refresh                    Removes existing .dotFiles and provides a refresh"
+ }
+
+sub_install () {
+    #Let's create an RSA Key and add to GitLab
+    read -p "Email Address for generating RSA Keys: " RSA_EmailAddy
+    ssh-keygen -t rsa -b 2048 -C "$RSA_EmailAddy"
+    cat ~/.ssh/id_rsa.pub
+    pbcopy < ~/.ssh/id_rsa.pub
+    echo -e "Please enter your SSH key (already copied) into your GitLab profile. \n Opening the webpage..."
+    sleep 3
+    open -a "Safari" & sleep 1 && osascript -e 'tell application "Safari" to open location "https://gitlab.com/-/profile/keys"'
+    read -n 1 -r -s -p $'Press enter to continue...\n'
+    echo "Installing dotFiles..."
+    mkdir -p "$TARGET"
+    git clone $SOURCE $TARGET
+ }
+
+sub_refresh () {
+    rm -rf "$HOME"/.dotFiles
+    mkdir -p "$TARGET"
+    git clone $SOURCE $TARGET
+ }
+case $COMMAND_NAME in
+  "" | "-h" | "--help")
+    sub_help
+    ;;
+  *)
+    shift
+    sub_${COMMAND_NAME} $@
+    if [ $? = 127 ]; then
+      echo "'$COMMAND_NAME' is not a known command or has errors." >&2
+      sub_help
+      exit 1
+    fi
+    ;;
+esac
